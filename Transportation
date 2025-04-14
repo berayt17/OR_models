@@ -1,0 +1,49 @@
+from pulp import *
+
+#initialize the problem
+transportation = LpProblem("Transportation_Problem", LpMinimize)
+
+#data: lists of plants and customers
+plants = ["Toronto", "Detroit"] 
+customers = ["NYC", "Philly", "StLouis"] 
+
+#data: dictionaries of supply, demand, and transportation cost. 
+
+supply = {"Toronto":800, "Detroit":700} 
+demand = {"NYC":450, "Philly":350, "StLouis":300} 
+
+tcost= {"Toronto":{"NYC":4, "Philly":7, "StLouis":8},
+"Detroit":{"NYC":5, "Philly":7, "StLouis":6}} 
+
+#variables
+x = LpVariable.dicts("quantity_shipped", (plants, customers), lowBound=0) 
+
+#obj. function
+transportation += lpSum(tcost[i][j]*x[i][j] for i in plants for j in customers) 
+
+#supply constraints
+for i in plants:
+	transportation+= lpSum(x[i][j] for j in customers)<=supply[i]
+
+#demand constraints
+for j in customers:
+	transportation+=lpSum(x[i][j] for i in plants)==demand[j]
+
+transportation.solve(PULP_CBC_CMD(msg=0))
+
+
+print("Status= ", LpStatus[transportation.status])
+
+print("Total Cost= ", value(transportation.objective))
+
+for v in transportation.variables():
+    if v.value()>0:
+        print(v.name, " = ", v.value())
+
+print("\n\n LP model:\n ")
+print(transportation)
+
+
+
+
+
