@@ -1,0 +1,60 @@
+from pulp import*
+trans = LpProblem("Transshipment_Problem", LpMinimize)
+
+plants = ["Toronto", "Detroit"] 
+#change1: adding a list of warehouses
+warehouses = ["Chicago", "Buffalo"] 
+customers = ["NYC", "Philly", "StLouis"] 
+
+supply = {"Toronto":800, "Detroit":700} 
+demand = {"NYC":450, "Philly":350, "StLouis":300} 
+
+#change2: writing two sets of transportation costs
+# trans cost from plants to warehouses
+tcost1= {"Toronto":{"Chicago":4, "Buffalo":7},
+        "Detroit":{"Chicago":5, "Buffalo":7}} 
+# trans cost from warehouses to customers
+tcost2= {"Chicago":{"NYC":6, "Philly":4, "StLouis":5},
+        "Buffalo":{"NYC":2, "Philly":3, "StLouis":4}} 
+
+#change3: revising decision variables.
+#x is from plants to warehouses
+#y is from warehouses to customers
+
+#Define the decision variables
+x = LpVariable.dicts("qs", (plants, warehouses), lowBound=0) 
+y = LpVariable.dicts("qs", (warehouses, customers), lowBound=0)
+
+#change 4: revise the tcosts in obj function
+# Define the objective function
+trans += lpSum([tcost1[i][j]*x[i][j] for i in plants for j in warehouses])+  lpSum([tcost2[i][j]*y[i][j] for i in warehouses for j in customers])
+
+#change 5: supply from plants to warehouses not customers
+# Write the supply constraints:
+for i in plants:
+    trans+=lpSum(x[i][j] for j in warehouses)<=supply[i]
+
+#change 6: demand cosntraint from warehouses to customers
+# Write the demand constraints:
+for j in customers:
+    trans+=lpSum(y[i][j] for i in warehouses)==demand[j]
+
+#change 7: flow-balance constraints for transhipment points
+# Write the flow-balance constraints:
+for w in warehouses:
+    trans+=lpSum(x[i][w] for i in plants)== lpSum(y[w][j] for j in customers)
+
+trans.solve(PULP_CBC_CMD(msg=0))
+
+
+print("Status= ", LpStatus[trans.status])
+
+print("Total Cost= ", value(trans.objective))
+
+for v in trans.variables():
+    if v.value()>0:
+        print(v.name, " = ", v.value())
+
+print("\n\n LP model:\n ")
+print(trans)
+
