@@ -1,0 +1,40 @@
+from pulp import *
+
+#Flair Furniture’s product mix problem: 
+flair = LpProblem("Flair_Furniture", LpMaximize)
+
+# Parameters and data:
+products = ["table", "chair"] 
+profit = {"table": 70, "chair":50}
+
+# Resources and capacities:  
+resources = ["carpentry", "painting"] 
+capacity = {"carpentry": 240, "painting":100}
+
+# Unit resource usages:
+carp = {"table": 4, "chair":3}
+paint = {"table": 2, "chair":1}
+
+
+# Decision variables:
+x = LpVariable.dicts("quantity", products, lowBound=0) 
+
+# Objective function:
+flair += lpSum(profit[i]*x[i] for i in products) 
+
+#Constraints:
+flair += lpSum(carp[i]*x[i] for i in products)<= capacity["carpentry"]
+
+flair += lpSum(carp[i]*x[i] for i in products)<= capacity["painting"]
+
+# solve the problem
+flair.solve(PULP_CBC_CMD(msg=0))
+
+
+# Print the results
+print("Status:", LpStatus[flair.status])
+
+for v in flair.variables():
+	print(v.name, "=", v.varValue)
+
+print("Optimal Profit =", value(flair.objective))
