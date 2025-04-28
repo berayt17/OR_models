@@ -1,0 +1,21 @@
+import networkx as nx
+# Create a road network graph
+G = nx.Graph()
+
+# Add edges (roads) with their respective weights (distances)
+G.add_edge('A', 'B', weight=3)
+G.add_edge('A', 'C', weight=2)
+G.add_edge('A', 'D', weight=5)
+G.add_edge('B', 'D', weight=1)
+G.add_edge('B', 'E', weight=2)
+G.add_edge('C', 'D', weight=2)
+G.add_edge('D', 'E', weight=2)
+nx.draw_networkx(G)
+
+# Find the shortest path between two locations
+path = nx.shortest_path(G, 'A', 'E', weight='weight')
+print("Shortest path:", path)
+
+# Calculate the length of the shortest path between two locations
+length = nx.shortest_path_length(G, 'A', 'E', weight='weight')
+print("Length:", length)
