@@ -1,0 +1,44 @@
+from pulp import*
+model=LpProblem("Set_Covering")
+
+cities=["city1", "city2", "city3","city4", "city5", "city6"]
+
+
+# Creates a 2D list of distances from the customers to the stations
+
+distance= [
+[0, 10, 20, 30, 30, 20],
+[10, 0, 25, 35, 20, 10],
+[20, 25, 0, 15, 30, 20], 
+[30, 35, 15, 0, 15, 25], 
+[30, 20, 30, 15, 0, 14],
+[20, 10, 20, 25, 14,0]
+]
+
+
+# The distance data is made into a dictionary
+dist = makeDict([cities, cities], distance, 0)
+
+
+x = LpVariable.dicts("open", cities, 0) 
+
+model+=lpSum(x[s] for s in cities)
+
+
+for i in cities:
+    model+=lpSum([x[s] for s in cities if dist[i][s]<=15])>=1
+  
+
+
+model.solve(PULP_CBC_CMD(msg=0))
+
+# Print the results
+print("Status:", LpStatus[model.status])
+
+for v in model.variables():
+	print(v.name, "=", v.varValue)
+
+print("Optimal Profit =", value(model.objective))
+
+print()
+print(model)
