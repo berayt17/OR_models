@@ -1,0 +1,98 @@
+import networkx as nx
+from pulp import *
+
+G=nx.DiGraph()
+
+G.add_edge(0,1,weight=3)
+G.add_edge(1,2,weight=2)
+G.add_edge(2,3,weight=1)
+G.add_edge(3,4,weight=3)
+G.add_edge(4,1,weight=4)
+
+
+'''
+for u,v,  in G.edges:
+    print("u=", u, "v=", v, " weight: ", G.edges[(u,v)]["weight"]) 
+'''
+
+
+nx.draw_networkx(G)
+
+
+source=1
+sink=4
+
+# Initialize the shortest path problem
+srp= LpProblem("Shortest_path_problem")
+
+ 
+# list of edge tuples using list condensation- to be used as the key index in the definition of variables.
+edges=[(u,v) for (u,v) in G.edges] 
+
+# Create a variable for each each edge.
+x= LpVariable.dicts("edge", edges, 0)
+
+srp+= lpSum(x[(u,v)]*G.edges[(u,v)]["weight"] for (u,v) in G.edges)
+
+# Write a constraint for each node:
+#The left-hand-side expressions for each constraint is same. 
+#LHS= the total amount shipped out of a node MINUS the total amount shipped into the node. 
+
+# The right-hand-side value changes according to the type of the node:
+# RHS: 1 for ssource node, 0 for intermediate nodes, -1 for the sink node.
+
+#Start by determining the RHS values. 
+
+# Then, use the same expression for LHS (FLOW OUT-FLOW IN) to write the constraints. 
+
+for nd in G.nodes:
+    if nd==source:
+        rhs=1
+    elif nd==sink:
+        rhs=-1
+    else:
+        rhs=0
+    # now, write the constraint for node nd as LHS= RHS:
+    # where LHS of all constraints is same (FLOW OUT-FLOW IN).
+    # Two alternative formulations for the flow-balance constraints:
+    # srp+= lpSum(x[(u,v)] for (u,v) in G.edges if u==nd)-lpSum(x[(u,v)] for (u,v) in G.edges if v==nd)==rhs
+    srp+= lpSum(x[(u,v)] for (u,v) in G.out_edges(nd))-lpSum(x[(u,v)] for (u,v) in G.in_edges(nd))==rhs
+
+
+srp.solve(PULP_CBC_CMD(msg=0))
+
+
+print("Status= ", LpStatus[srp.status])
+
+print("Total Cost= ", value(srp.objective))
+
+# print the nodes in the order visited:
+edges_in_path= []
+for v in srp.variables():
+    if v.value()>0:
+        print(v.name, " = ", v.value())
+        edges_in_path.append(v)
+
+#print("\n Edges in the optimal path:\n")
+#print(edges_in_path, "\n\n") 
+
+node= source
+path=[node]
+
+while edges_in_path!=[]:
+    edge=[(u,v) for (u,v) in edges if u==node]
+    edges_in_path.remove(edge)
+    remove=[v for (u,v) in edge]
+    node= remove[0]
+    path.append(node)
+
+  
+print("\n PATH:\n", path)
+
+
+print("\n Write the LP model to check if the model is correct!\n")
+
+print(srp)
+
+
+
